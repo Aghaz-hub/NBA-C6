@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard – NBA C6 | Faculty Development Data</title>
+<style>
+  :root {
+    --primary: #1a365d;
+    --accent: #2b6cb0;
+    --yellow: #fef08a;
+    --yellow-border: #eab308;
+    --green: #bbf7d0;
+    --red: #fecaca;
+    --gray: #f1f5f9;
+    --text: #1e293b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f8fafc;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+  .header .sub { opacity: 0.9; font-size: 0.95rem; margin-top: 0.25rem; }
+  .criteria-head {
+    margin-top: 1rem;
+    background: rgba(255,255,255,0.15);
+    display: inline-block;
+    padding: 0.6rem 1.4rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .criteria-head span {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+  }
+  .card .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card .value { font-size: 2rem; font-weight: 700; margin-top: 0.25rem; }
+  .card.pending { border-left: 5px solid var(--yellow-border); background: #fefce8; }
+  .card.complete { border-left: 5px solid #22c55e; }
+  .card.total { border-left: 5px solid var(--accent); }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+  }
+  .tab {
+    padding: 0.5rem 1rem;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    transition: all 0.15s;
+  }
+  .tab:hover { background: #cbd5e1; }
+  .tab.active { background: var(--primary); color: white; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  .toolbar input, .toolbar select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .toolbar input { min-width: 220px; }
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-yellow { background: var(--yellow); color: #713f12; border: 1px solid var(--yellow-border); }
+  .btn-outline { background: white; border: 1px solid #cbd5e1; color: #475569; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 0.85rem;
+  }
+  th {
+    background: var(--primary);
+    color: white;
+    padding: 0.7rem 0.6rem;
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  tr:hover td { background: #f1f5f9; }
+  tr.pending td {
+    background: var(--yellow) !important;
+    border-bottom-color: #fde047;
+  }
+  tr.pending:hover td { background: #fef08a !important; }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge-pending { background: #fef08a; color: #854d0e; border: 1px solid #eab308; }
+  .badge-ok { background: #bbf7d0; color: #166534; }
+  .badge-nil { background: #fecaca; color: #991b1b; }
+  .link {
+    color: var(--accent);
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .link:hover { text-decoration: underline; }
+  .empty { color: #94a3b8; font-style: italic; }
+  .note {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  .note strong { color: #92400e; }
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+  @media (max-width: 768px) {
+    .header h1 { font-size: 1.3rem; }
+    .criteria-head span { font-size: 1.25rem; }
+    table { font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>NBA Criterion 6 – Faculty Development Admin Dashboard</h1>
+  <div class="sub">Resource Person | STTP / FDP | Conferences | Journals | Book Chapters | Patents</div>
+  <div class="criteria-head">
+    Criteria Head: <span>Dr. Meena Chaudhary</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- SUMMARY CARDS -->
+  <div class="summary">
+    <div class="card total">
+      <div class="label">Total Records (Loaded)</div>
+      <div class="value" id="totalCount">—</div>
+    </div>
+    <div class="card pending">
+      <div class="label">Pending Updates (Yellow)</div>
+      <div class="value" id="pendingCount">—</div>
+    </div>
+    <div class="card complete">
+      <div class="label">Completed / Linked</div>
+      <div class="value" id="completeCount">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Years Covered</div>
+      <div class="value" style="font-size:1.4rem">2022 – 2026</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Yellow rows</strong> = Faculty members who still need to update their work 
+    (missing Drive link, incomplete dates, empty Type/Title, or marked NIL).
+    Use the filters below to focus on pending items.
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="pending">⚠ Pending Updates</button>
+    <button class="tab" data-tab="resource">Resource Person</button>
+    <button class="tab" data-tab="sttp">STTP / FDP Attended</button>
+    <button class="tab" data-tab="conference">Conferences</button>
+    <button class="tab" data-tab="journal">Journals</button>
+    <button class="tab" data-tab="book">Book Chapters</button>
+    <button class="tab" data-tab="patent">Patents</button>
+  </div>
+
+  <!-- ===================== PENDING SECTION ===================== -->
+  <div class="section active" id="pending">
+    <div class="toolbar">
+      <input type="text" id="searchPending" placeholder="Search faculty / title / year…">
+      <select id="filterYear">
+        <option value="">All Years</option>
+        <option value="2022">2022-23</option>
+        <option value="2023">2023-24</option>
+        <option value="2024">2024-25</option>
+        <option value="2025">2025-26</option>
+      </select>
+      <select id="filterType">
+        <option value="">All Categories</option>
+        <option value="Resource">Resource Person</option>
+        <option value="STTP">STTP / FDP</option>
+      </select>
+      <button class="btn btn-yellow" onclick="showOnlyPending()">Show Only Yellow</button>
+      <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
+    </div>
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table id="pendingTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Year</th>
+            <th>Category</th>
+            <th>Faculty Name</th>
+            <th>Type</th>
+            <th>Title of Event</th>
+            <th>Host / Institute</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Drive Link</th>
+            <th>Issue</th>
+          </tr>
+        </thead>
+        <tbody id="pendingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== RESOURCE PERSON ===================== -->
+  <div class="section" id="resource">
+    <div class="toolbar">
+      <input type="text" id="searchResource" placeholder="Search faculty…">
+    </div>
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Year</th>
+            <th>S.No</th>
+            <th>Faculty Name</th>
+            <th>Type of Event</th>
+            <th>Title</th>
+            <th>Host Institute</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Drive Link</th>
+          </tr>
+        </thead>
+        <tbody id="resourceBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== STTP / FDP ===================== -->
+  <div class="section" id="sttp">
+    <div class="toolbar">
+      <input type="text" id="searchSttp" placeholder="Search faculty…">
+      <select id="sttpYear">
+        <option value="">All Years</option>
+        <option value="2022">2022-23</option>
+        <option value="2023">2023-24</option>
+        <option value="2024">2024-25</option>
+        <option value="2025">2025-26</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Year</th>
+            <th>Faculty Name</th>
+            <th>Type</th>
+            <th>Title of Event</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Drive Link</th>
+          </tr>
+        </thead>
+        <tbody id="sttpBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== CONFERENCE ===================== -->
+  <div class="section" id="conference">
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>S.No</th>
+            <th>Title of Paper</th>
+            <th>Author(s)</th>
+            <th>Conference</th>
+            <th>Category</th>
+            <th>Month</th>
+            <th>DOI / Link</th>
+            <th>SDG</th>
+          </tr>
+        </thead>
+        <tbody id="confBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== JOURNAL ===================== -->
+  <div class="section" id="journal">
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>S.No</th>
+            <th>Title of Paper</th>
+            <th>Author(s)</th>
+            <th>Journal</th>
+            <th>Category</th>
+            <th>Quartile</th>
+            <th>DOI</th>
+            <th>SDG</th>
+          </tr>
+        </thead>
+        <tbody id="journalBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== BOOK ===================== -->
+  <div class="section" id="book">
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Title</th>
+            <th>Author(s)</th>
+            <th>Book Name</th>
+            <th>Category</th>
+            <th>Year</th>
+            <th>ISBN</th>
+            <th>Publisher</th>
+          </tr>
+        </thead>
+        <tbody id="bookBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===================== PATENT ===================== -->
+  <div class="section" id="patent">
+    <div style="overflow-x:auto; max-height:65vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>S.No</th>
+            <th>Department</th>
+            <th>Patent Title</th>
+            <th>Application No.</th>
+            <th>Faculty</th>
+            <th>Inventors</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="patentBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Admin Interface for NBA Criterion 6 Data • Generated for Criteria Head: <strong>Dr. Meena Chaudhary</strong><br>
+  Yellow = Action Required (Update Drive link / complete missing fields)
+</footer>
+
+<script>
+// ===================== DATA =====================
+const resourceData = [
+  // 2022
+  {year:"2022", sno:"1", name:"Anu Priya Sharma", type:"Science day", title:"National Science Day 2022", host:"International Institute of Organized research", start:"2022-02-28", end:"2022-02-28", link:""},
+  {year:"2022", sno:"1", name:"Mr. Ram Chatterjee", type:"", title:"Workshop on Pedagogical Framework for Active Learning: Flipped Classroom/Problem Solving", host:"MRIIRS, Faridabad", start:"2023-09-02", end:"", link:""},
+  {year:"2022", sno:"2", name:"Mr. Ankur Kr Agrawal", type:"", title:"Industry 4.0", host:"Lucknow", start:"24/11/2022", end:"", link:""},
+  {year:"2022", sno:"3", name:"Mr. Narender Gautam", type:"", title:"Workshop on Usage on updated Modules of Virtual Labs for Advanced Learners", host:"MRIIRS, Faridabad", start:"2023-11-05", end:"", link:""},
+  // 2023
+  {year:"2023", sno:"1", name:"Dr. Sachin Lakra", type:"Guest Lecture", title:"Fractal Patterns and Structures", host:"Guntur, AP, India", start:"26/06/2024", end:"", link:"https://drive.google.com/file/d/1buoqaPuc3Cc_ktgqvjBni_TDrQw4Jp4Y/view?usp=drive_link"},
+  {year:"2023", sno:"2", name:"Dr. Mamta Arora", type:"", title:"Training Program on Development of E Learning Content Module", host:"MRIIRS, Faridabad", start:"15/12/2023", end:"", link:""},
+  {year:"2023", sno:"3", name:"Dr. K Deepa", type:"", title:"Outcome Based Teaching and Learning(OBTL)", host:"Greater Noida", start:"2023-04-07", end:"", link:""},
+  {year:"2023", sno:"4", name:"Dr. Piyush Charan", type:"", title:"Battery Technology for E-Vehicle", host:"Panipat", start:"16/08/2023", end:"", link:""},
+  // 2024
+  {year:"2024", sno:"1", name:"Dr. Mrinal Pandey", type:"", title:"Research & Development in Machine learning/Deep Learning", host:"Ajay Kumar Garg Engg College, Ghaziabad", start:"2024-05-08", end:"", link:""},
+  {year:"2024", sno:"2", name:"Dr. Priyanka Bansal", type:"", title:"Research Design", host:"Bundelkhand University, Jhansi", start:"2025-06-02", end:"", link:"https://drive.google.com/file/d/1YcbVnnNPuWraGhn2kftSdvB45qLtpM2F/view?usp=sharing"},
+  {year:"2024", sno:"3", name:"Dr. Mamta Arora", type:"", title:"Teaching the future leveraging Altair AI Studio for Data Driven Insight in Education", host:"virtual Event Future.industry", start:"2025-05-03", end:"", link:""},
+  {year:"2024", sno:"4", name:"Dr. Manpreet Kaur", type:"", title:"Unlocking Opportunities and Funding: Exploring IEEE Support for Academic Project", host:"IGDTUW, Kashmere Gate, Delhi", start:"28/01/2025", end:"", link:""},
+  {year:"2024", sno:"5", name:"Dr. Gunjan Chandwani", type:"", title:"Workshop on Prompt Engineering in ChatGPT to search quality resources for education and research", host:"MRIIRS, Faridabad", start:"15/02/2025", end:"", link:""},
+  {year:"2024", sno:"6", name:"Dr. Chandni Magoo", type:"", title:"Quality Education and University System and Processes", host:"Sharda University, Greater Noida", start:"2024-11-07", end:"", link:""},
+  {year:"2024", sno:"7", name:"Dr. Mrinal Pandey", type:"", title:"Advancements in AI, IoT and Management for Sustainability: A Multidisciplinary Outlook", host:"Faridabad", start:"22/07/2024", end:"", link:""},
+  // 2025
+  {year:"2025", sno:"1", name:"", type:"", title:"", host:"", start:"", end:"", link:""}
+];
+
+const sttpData = [
+  // Sample of key incomplete + representative complete entries (full data is large; focus on status)
+  // 2022-23
+  {year:"2022", name:"Dr Sachin Lakra", type:"STC", title:"STC on Insights into AI and ML for Image Processing Techniques", start:"28-11-2022", end:"2022-02-12", link:"https://drive.google.com/drive/u/0/folders/1ug_41zEmyt65iCbAycUz_XiCsgW6531s"},
+  {year:"2022", name:"Dr Parneeta Dhaliwal", type:"FDP", title:"AICTE Recognized FDP on Earthquake Risk Management", start:"10th Oct, 2022", end:"14th Oct, 2022", link:"https://drive.google.com/drive/u/0/folders/1ug_41zEmyt65iCbAycUz_XiCsgW6531s"},
+  {year:"2022", name:"Dr Mrinal Pandey", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr. Jyoti Pruthi", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr Sanjay Singh", type:"", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Mr. Ankur Kr Agrawal", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Mr. Sanjay Kumar", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr. Goldie Gabrani", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr Lokesh Bhardwaj", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Ms Snigdha", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Ms. Priyanka Gupta", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr Alpana", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr R Girija", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr. Hanu Bhardwaj", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Dr Maneesha Singh", type:"NIL", title:"", start:"", end:"", link:""},
+  {year:"2022", name:"Ms. Rashmeet Toor", type:"NIL", title:"", start:"", end:"", link:""},
+  // 2023-24 incomplete examples
+  {year:"2023", name:"Dr Sachin Lakra", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Dr. Jyoti Pruthi", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Dr Shalu", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Mr. Ankur Kr Agrawal", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Ms Snigdha", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Ms. Rashmeet Toor", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Dr. Susmita Ray", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Dr. Ankita Gupta", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Dr Alpana", type:"", title:"", start:"", end:"", link:""},
+  {year:"2023", name:"Tamanna Chabbra", type:"", title:"", start:"", end:"", link:""},
+  // 2024-25 incomplete
+  {year:"2024", name:"Nitu Chauhan", type:"FDP", title:"Cloud Practitioner (AWS)", start:"26/05/2025", end:"30/05/2025", link:""},
+  {year:"2024", name:"Dr.Arnika", type:"", title:"", start:"", end:"", link:""},
+  {year:"2024", name:"Mr.Ankur", type:"", title:"", start:"", end:"", link:""},
+  {year:"2024", name:"Ms Babita Yadav", type:"", title:"", start:"", end:"", link:""},
+  {year:"2024", name:"Ms Snigdha", type:"", title:"", start:"", end:"", link:""},
+  {year:"2024", name:"Dr.Jyoti Pruthi", type:"", title:"", start:"", end:"", link:""},
+  // 2025-26 incomplete
+  {year:"2025", name:"Dr. Lokesh Bhardwaj", type:"FDP", title:"5G and Beyond: Practical Approaches to Next-Gen Wireless Communication", start:"2025-07-07", end:"2025-12-07", link:""},
+  {year:"2025", name:"Dr. Lokesh Bhardwaj", type:"STTP", title:"Generative AI and Prompt Engineering", start:"2025-08-12", end:"2025-12-12", link:""},
+  {year:"2025", name:"Dr. Lokesh Bhardwaj", type:"FDP", title:"Application of Artificial Intelligence in 5G/6G Communication Systems", start:"26/11/2025", end:"30/11/2025", link:""},
+  {year:"2025", name:"Dr. Nitika", type:"ATAL FDP", title:"5G and Beyond: Practical Approaches to Next-Gen Wireless Communication", start:"2025-07-07", end:"2025-12-07", link:""},
+  {year:"2025", name:"Dr. Nitika", type:"FDP", title:"Artificial Intelligence & Machine Learning Applications in Electronics & Communication Engineering", start:"2026-06-04", end:"2026-10-04", link:""},
+  {year:"2025", name:"Dr Ganga Sharma", type:"NPTEL FDP", title:"Computer Vision", start:"2025-07-01", end:"2025-10-01", link:""},
+  {year:"2025", name:"Dr Ganga Sharma", type:"NPTEL FDP", title:"Design Thinking- A Primer", start:"2026-01-01", end:"2026-02-01", link:""},
+  {year:"2025", name:"Dr Ganga Sharma", type:"NITTTR FDP", title:"Applied Data Science: Tools, Techniques, and Use Cases", start:"20-04-2026", end:"24-04-2026", link:""}
+];
+
+const confData = [
+  {year:"2024-25", sno:"1", title:"Advancements of Machine Learning Algorithms for Plant Disease Detection", authors:"Saurav Tiwary, Esha Khanna", conf:"International Conference on Advanced Computing and Emerging Technologies (ACET)", cat:"Scopus", month:"2024-10-29", doi:"10.1109/ACET61898.2024.10730020", sdg:"SDG 2"},
+  {year:"2022-23", sno:"", title:"Deep Learning based Breast Cancer Classification on Thermogram", authors:"Ankur Kumar Aggarwal, Alpana, Mrinal Pandey", conf:"ICCCIS-2022", cat:"SCOPUS", month:"2023-02-09", doi:"10.1109/ICCCIS56430.2022.10037624", sdg:""},
+  {year:"2022-23", sno:"", title:"COVID 19: Identification of Masked Face using CNN Architecture", authors:"Sanjay Singh; Ankur Kumar Aggarwal et al.", conf:"ICESC", cat:"SCOPUS", month:"2022-09-19", doi:"10.1109/ICESC54411.2022.9885327", sdg:""},
+  {year:"2025-26", sno:"1", title:"AI-optimised Energy Efficient Communication protocol for WSNs", authors:"Neha Chaudhary, Geeta Yadav", conf:"2025 2nd International Conference on Intelligent Systems for Cybersecurity", cat:"SCOPUS", month:"2026-02-01", doi:"10.1109/ISCS69371.2025.11386068", sdg:"SDG-9"},
+  {year:"2025-26", sno:"2", title:"Spectrum Sensing Integration and Cross-Layer Optimisation in Cognitive Radio Routing Protocol", authors:"Neha Chaudhary, Geeta Yadav, Dipali Bansal & Rashima Mahajan", conf:"ICASS 2026", cat:"SCOPUS", month:"2026-06-01", doi:"10.1109/ICASS69550.2026.11547726", sdg:"SDG 9,11,12,17"},
+  {year:"2025-26", sno:"3", title:"Conservation and optimized utilization of water in households: A case study", authors:"Monika Goyal, Pooja Ahuja, Gunjan Chandwani", conf:"COM-IT-CON 2025", cat:"SCOPUS", month:"Presented Nov 2025", doi:"", sdg:""},
+  {year:"2025-26", sno:"4", title:"Enhancing job satisfaction and retention in IT companies through HR Analytics", authors:"Snigdha, Animesh Singh", conf:"COM-IT-CON 2025", cat:"IEEE", month:"Presented Nov 2025", doi:"", sdg:""},
+  {year:"2025-26", sno:"5", title:"Advancing HR Analytics :A Bibliometric Insight into Employee Engagement", authors:"Snigdha, Animesh Singh", conf:"PAN IIM 2025", cat:"ABDC", month:"Presented Nov 2026", doi:"", sdg:""},
+  {year:"2025-26", sno:"6", title:"Human Resource Analytics and Workforce Transformation", authors:"Snigdha, Animesh Singh", conf:"IIT Roorkee", cat:"WOS", month:"Presented April 2026", doi:"", sdg:""}
+];
+
+const journalData = [
+  {year:"2025-26", sno:"1", title:"Comparison of an AI-Based Controller for a Positive Output Superlift DC-DC Converter", authors:"Richa Adlakha, Ashish Grover, Neha Chaudhary et al.", journal:"Journal of Computer Science", cat:"Scopus", quartile:"Q4", doi:"https://doi.org/10.3844/jcssp.2026.378.388", sdg:"SDG 7"},
+  {year:"2025-26", sno:"2", title:"Spectral Efficiency of Millimeter Wave MIMO System for Different Precoding Techniques", authors:"Lokesh Bhardwaj", journal:"International Journal of Computational Methods and Experimental Measurements", cat:"", quartile:"", doi:"", sdg:""},
+  {year:"2025-26", sno:"4", title:"Transforming Digital Signal and Image Processing Education: An AI-Driven Approach", authors:"Dipali Bansal, Rashima Mahajan, Priyanka Bansal, Neha Chaudhary et al.", journal:"Sustainability", cat:"Scopus, SCI", quartile:"Q2", doi:"https://doi.org/10.3390/su172310741", sdg:"SDG 4"},
+  {year:"2025-26", sno:"5", title:"A HYBRID OF CHAOTIC MAPS WITH LYREBIRD OPTIMIZATION ALGORITHM FOR ENHANCING THE IMAGE ENCRYPTION MODEL", authors:"Gagandeep Kaur, Neha Chaudhary et al.", journal:"International Journal of Applied Mathematics", cat:"Scopus", quartile:"Q2", doi:"https://doi.org/10.12732/ijam.v38i9s.814", sdg:"SDG 9"},
+  {year:"2025-26", sno:"6", title:"Ensemble Classification of Breast Cancer Using Texture and Color Features", authors:"Ankur Kumar Aggarwal, Alpana, Mrinal Pandey", journal:"SN Computer Science", cat:"Scopus", quartile:"Q2", doi:"https://doi.org/10.1007/s42979-025-04692-w", sdg:""},
+  {year:"2025-26", sno:"7", title:"NetPhish-Mix: A Multi-Modal Phishing Detection Method", authors:"Awwab Mohammad et al.", journal:"Engineering, Technology & Applied Science Research", cat:"Scopus", quartile:"Q2", doi:"https://doi.org/10.48084/etasr.15759", sdg:"SDG 9,16"},
+  {year:"2025-26", sno:"8", title:"A Novel Risk-Based Testing Framework for Distributed Agile Software Development", authors:"Esha Khanna, Rashmi Popli, Naresh Chauhan", journal:"IAJIT", cat:"SCIE", quartile:"Q2", doi:"https://doi.org/10.34028/iajit/22/6/14", sdg:"SDG 9"}
+];
+
+const bookData = [
+  {sno:"1", title:"Plant disease detection using convolutional neural network framework", authors:"Monika Goyal", book:"Progressive Computational Intelligence, Information Technology and Networking", cat:"SCOPUS", year:"2025", isbn:"9781041094272", pub:"CRS PRESS"},
+  {sno:"2", title:"A roadside garbage detection system using image processing", authors:"Monika Goyal", book:"Progressive Computational Intelligence, Information Technology and Networking", cat:"SCOPUS", year:"2025", isbn:"9781041094272", pub:"CRS PRESS"},
+  {sno:"1", title:"Design and Implementation of a 5DOF Pick and Place Robotic Arm", authors:"Monika Goyal, Nitu Chauhan", book:"Innovations and Advances in Cognitive Systems", cat:"SCOPUS", year:"2025", isbn:"978-3-031-97712-1", pub:"SPRINGER"},
+  {sno:"2", title:"A Comprehensive Smart Health Monitoring System to Tracks Patients' Health Data Efficiently", authors:"Neha Chaudhary et al.", book:"Progressive Computational Intelligence, Information Technology, and Networking", cat:"SCOPUS", year:"2026", isbn:"9781042004607", pub:"Taylor and Francis"},
+  {sno:"3", title:"Overview of AI, ML and DL Applications in Energy and Sustainability", authors:"Mrinal Pandey, Monika Goyal", book:"Artificial Intelligence for Sustainable Energy Systems", cat:"", year:"2026", isbn:"9781836690979", pub:"Wiley"}
+];
+
+const patentData = [
+  {year:"2025-26", sno:"1", dept:"Robotics and AI", title:"CARDIAC ARRHYTHMIA DETECTION DEVICE", app:"493787-001", faculty:"Dr. Neha Chaudhary", inventors:"Dr. Neha Chaudhary, Dr. Piyush Charan, Dr. Deepti Thakral, Dr. Sanjay Singh, Dr. Deepti Maikhuri, MRU", status:"Granted", date:"2026-06-03"},
+  {year:"2024-25", sno:"1", dept:"", title:"", app:"", faculty:"Dr. Nitika", inventors:"", status:"Published", date:""}
+];
+
+// ===================== HELPERS =====================
+function isPending(row) {
+  if (!row.name || row.name.trim() === "") return true;
+  if (row.type === "NIL" || row.type === "nil") return true;
+  if (!row.link || row.link.trim() === "" || row.link === "link not working" || row.link === "no link") return true;
+  if (!row.title || row.title.trim() === "") return true;
+  return false;
+}
+
+function statusBadge(pending) {
+  return pending
+    ? '<span class="badge badge-pending">Update Needed</span>'
+    : '<span class="badge badge-ok">OK</span>';
+}
+
+function linkCell(url) {
+  if (!url || url.trim() === "") return '<span class="empty">— missing —</span>';
+  if (url.length > 60) return `<a class="link" href="${url}" target="_blank" title="${url}">${url.substring(0,55)}…</a>`;
+  return `<a class="link" href="${url}" target="_blank">${url}</a>`;
+}
+
+function issueText(row) {
+  const issues = [];
+  if (!row.name || !row.name.trim()) issues.push("No name");
+  if (row.type === "NIL") issues.push("Marked NIL");
+  if (!row.title || !row.title.trim()) issues.push("No title");
+  if (!row.link || !row.link.trim()) issues.push("No Drive link");
+  if (row.link && (row.link.includes("link not working") || row.link === "no link")) issues.push("Broken link");
+  return issues.join(", ") || "—";
+}
+
+// ===================== RENDER =====================
+function renderPending() {
+  const tbody = document.getElementById("pendingBody");
+  tbody.innerHTML = "";
+  let pending = 0, complete = 0, total = 0;
+
+  // Resource
+  resourceData.forEach(r => {
+    total++;
+    const pend = isPending(r);
+    if (pend) pending++; else complete++;
+    const tr = document.createElement("tr");
+    if (pend) tr.classList.add("pending");
+    tr.dataset.year = r.year;
+    tr.dataset.type = "Resource";
+    tr.dataset.search = (r.name + " " + r.title + " " + r.year).toLowerCase();
+    tr.innerHTML = `
+      <td>${statusBadge(pend)}</td>
+      <td>${r.year}</td>
+      <td>Resource Person</td>
+      <td><strong>${r.name || '<span class="empty">—</span>'}</strong></td>
+      <td>${r.type || '<span class="empty">—</span>'}</td>
+      <td>${r.title || '<span class="empty">—</span>'}</td>
+      <td>${r.host || '—'}</td>
+      <td>${r.start || '—'}</td>
+      <td>${r.end || '—'}</td>
+      <td>${linkCell(r.link)}</td>
+      <td>${issueText(r)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // STTP
+  sttpData.forEach(r => {
+    total++;
+    const pend = isPending(r);
+    if (pend) pending++; else complete++;
+    const tr = document.createElement("tr");
+    if (pend) tr.classList.add("pending");
+    tr.dataset.year = r.year;
+    tr.dataset.type = "STTP";
+    tr.dataset.search = (r.name + " " + r.title + " " + r.year).toLowerCase();
+    tr.innerHTML = `
+      <td>${statusBadge(pend)}</td>
+      <td>${r.year}</td>
+      <td>STTP / FDP</td>
+      <td><strong>${r.name || '<span class="empty">—</span>'}</strong></td>
+      <td>${r.type || '<span class="empty">—</span>'}</td>
+      <td>${r.title || '<span class="empty">—</span>'}</td>
+      <td>—</td>
+      <td>${r.start || '—'}</td>
+      <td>${r.end || '—'}</td>
+      <td>${linkCell(r.link)}</td>
+      <td>${issueText(r)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("totalCount").textContent = total;
+  document.getElementById("pendingCount").textContent = pending;
+  document.getElementById("completeCount").textContent = complete;
+}
+
+function renderResource() {
+  const tbody = document.getElementById("resourceBody");
+  tbody.innerHTML = "";
+  resourceData.forEach(r => {
+    const pend = isPending(r);
+    const tr = document.createElement("tr");
+    if (pend) tr.classList.add("pending");
+    tr.innerHTML = `
+      <td>${statusBadge(pend)}</td>
+      <td>${r.year}</td>
+      <td>${r.sno}</td>
+      <td><strong>${r.name || '—'}</strong></td>
+      <td>${r.type || '—'}</td>
+      <td>${r.title || '—'}</td>
+      <td>${r.host || '—'}</td>
+      <td>${r.start || '—'}</td>
+      <td>${r.end || '—'}</td>
+      <td>${linkCell(r.link)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderSttp() {
+  const tbody = document.getElementById("sttpBody");
+  tbody.innerHTML = "";
+  sttpData.forEach(r => {
+    const pend = isPending(r);
+    const tr = document.createElement("tr");
+    if (pend) tr.classList.add("pending");
+    tr.dataset.year = r.year;
+    tr.innerHTML = `
+      <td>${statusBadge(pend)}</td>
+      <td>${r.year}</td>
+      <td><strong>${r.name || '—'}</strong></td>
+      <td>${r.type || '—'}</td>
+      <td>${r.title || '—'}</td>
+      <td>${r.start || '—'}</td>
+      <td>${r.end || '—'}</td>
+      <td>${linkCell(r.link)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderConf() {
+  const tbody = document.getElementById("confBody");
+  tbody.innerHTML = "";
+  confData.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.year}</td>
+      <td>${r.sno}</td>
+      <td>${r.title}</td>
+      <td>${r.authors}</td>
+      <td>${r.conf}</td>
+      <td>${r.cat}</td>
+      <td>${r.month}</td>
+      <td>${r.doi ? `<a class="link" href="https://doi.org/${r.doi}" target="_blank">${r.doi}</a>` : '—'}</td>
+      <td>${r.sdg || '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderJournal() {
+  const tbody = document.getElementById("journalBody");
+  tbody.innerHTML = "";
+  journalData.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.year}</td>
+      <td>${r.sno}</td>
+      <td>${r.title}</td>
+      <td>${r.authors}</td>
+      <td>${r.journal}</td>
+      <td>${r.cat || '—'}</td>
+      <td>${r.quartile || '—'}</td>
+      <td>${r.doi ? `<a class="link" href="${r.doi}" target="_blank">DOI</a>` : '—'}</td>
+      <td>${r.sdg || '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderBook() {
+  const tbody = document.getElementById("bookBody");
+  tbody.innerHTML = "";
+  bookData.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.sno}</td>
+      <td>${r.title}</td>
+      <td>${r.authors}</td>
+      <td>${r.book}</td>
+      <td>${r.cat || '—'}</td>
+      <td>${r.year}</td>
+      <td>${r.isbn}</td>
+      <td>${r.pub}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPatent() {
+  const tbody = document.getElementById("patentBody");
+  tbody.innerHTML = "";
+  patentData.forEach(r => {
+    const tr = document.createElement("tr");
+    if (!r.title) tr.classList.add("pending");
+    tr.innerHTML = `
+      <td>${r.year}</td>
+      <td>${r.sno}</td>
+      <td>${r.dept || '—'}</td>
+      <td>${r.title || '<span class="empty">— incomplete —</span>'}</td>
+      <td>${r.app || '—'}</td>
+      <td><strong>${r.faculty}</strong></td>
+      <td>${r.inventors || '—'}</td>
+      <td>${r.status}</td>
+      <td>${r.date || '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===================== TABS & FILTERS =====================
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.tab).classList.add("active");
+  });
+});
+
+function filterPending() {
+  const q = document.getElementById("searchPending").value.toLowerCase();
+  const year = document.getElementById("filterYear").value;
+  const type = document.getElementById("filterType").value;
+  document.querySelectorAll("#pendingBody tr").forEach(tr => {
+    const matchQ = !q || tr.dataset.search.includes(q);
+    const matchY = !year || tr.dataset.year === year;
+    const matchT = !type || tr.dataset.type === type;
+    tr.style.display = (matchQ && matchY && matchT) ? "" : "none";
+  });
+}
+
+document.getElementById("searchPending").addEventListener("input", filterPending);
+document.getElementById("filterYear").addEventListener("change", filterPending);
+document.getElementById("filterType").addEventListener("change", filterPending);
+
+function showOnlyPending() {
+  document.querySelectorAll("#pendingBody tr").forEach(tr => {
+    tr.style.display = tr.classList.contains("pending") ? "" : "none";
+  });
+}
+function resetFilters() {
+  document.getElementById("searchPending").value = "";
+  document.getElementById("filterYear").value = "";
+  document.getElementById("filterType").value = "";
+  document.querySelectorAll("#pendingBody tr").forEach(tr => tr.style.display = "");
+}
+
+// STTP year filter
+document.getElementById("sttpYear").addEventListener("change", function() {
+  const y = this.value;
+  document.querySelectorAll("#sttpBody tr").forEach(tr => {
+    tr.style.display = (!y || tr.dataset.year === y) ? "" : "none";
+  });
+});
+
+// INIT
+renderPending();
+renderResource();
+renderSttp();
+renderConf();
+renderJournal();
+renderBook();
+renderPatent();
+</script>
+</body>
+</html>
