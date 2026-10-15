@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MRU Faculty Tools</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      line-height: 1.5;
+    }
+    #app {
+      display: none;
+    }
+    a {
+      display: inline-block;
+      margin: 0.4rem 0;
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.6rem 1.2rem;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #b91c1c;
+    }
+    #status {
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <p id="status">Verifying your session…</p>
+
+  <main id="app">
+    <h1>MRU Faculty Tools</h1>
+    <p>Logged in as: <strong id="faculty-email"></strong></p>
+
+    <hr>
+
+    <!-- ========== PUT YOUR TOOLS HERE ========== -->
+    <h3>Available Tools</h3>
+    <a href="room-finder.html">Classroom Finder</a><br>
+    <a href="exam-seat-finder.html">Exam Seat Finder</a><br>
+    <!-- Add more tool links below -->
+    <!-- <a href="your-tool.html">Your Tool Name</a><br> -->
+
+    <br><br>
+    <button id="logout">Sign Out</button>
+  </main>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ========== REPLACE THESE TWO VALUES ==========
+    const SUPABASE_URL = "https://oppworrrglnaqechzlfn
+.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcHdvcnJyZ2xuYXFlY2h6bGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjQ5NTcsImV4cCI6MjEwNzY0MDk1N30.aaQbGkRUW067HMxxcgAZ5-j2Ea7YahFiTWrmqszzSGw";
+    // ==============================================
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const status = document.getElementById("status");
+    const app = document.getElementById("app");
+
+    async function checkAccess() {
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error || !user || !user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        window.location.replace("index.html");
+        return;
+      }
+
+      const email = user.email.toLowerCase();
+
+      // Check if this email exists in the allowed_faculty table
+      const { data: allowed, error: allowError } = await supabase
+        .from("allowed_faculty")
+        .select("email")
+        .eq("email", email)
+        .single();
+
+      if (allowError || !allowed) {
+        // Email is not in the allow-list → deny access
+        await supabase.auth.signOut();
+        window.location.replace("index.html");
+        return;
+      }
+
+      // User is allowed
+      document.getElementById("faculty-email").textContent = email;
+      status.style.display = "none";
+      app.style.display = "block";
+    }
+
+    document.getElementById("logout").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      window.location.replace("index.html");
+    });
+
+    // Run the check when page loads
+    checkAccess();
+  </script>
+</body>
+</html>

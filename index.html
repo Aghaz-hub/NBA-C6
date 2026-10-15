@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MRU Faculty Tools – Login</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 420px;
+      margin: 4rem auto;
+      padding: 1.5rem;
+      line-height: 1.5;
+      color: #1f2937;
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      color: #4b5563;
+      margin-bottom: 1.5rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      box-sizing: border-box;
+    }
+    input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+    #message {
+      margin-top: 1.2rem;
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .success {
+      background: #ecfdf5;
+      color: #065f46;
+    }
+    .error {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>MRU Faculty Tools</h1>
+  <p>Enter your official MRU email address to receive a secure login link.</p>
+
+  <form id="login-form">
+    <input 
+      id="email" 
+      type="email" 
+      placeholder="name@mru.edu.in" 
+      required 
+      autocomplete="email"
+    >
+    <button type="submit" id="submit-btn">Send Login Link</button>
+  </form>
+
+  <div id="message"></div>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // ========== REPLACE THESE TWO VALUES ==========
+    const SUPABASE_URL = "https://oppworrrglnaqechzlfn
+.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcHdvcnJyZ2xuYXFlY2h6bGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjQ5NTcsImV4cCI6MjEwNzY0MDk1N30.aaQbGkRUW067HMxxcgAZ5-j2Ea7YahFiTWrmqszzSGw";
+    // ==============================================
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const form = document.getElementById("login-form");
+    const emailInput = document.getElementById("email");
+    const submitBtn = document.getElementById("submit-btn");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = emailInput.value.trim().toLowerCase();
+
+      // Frontend check (for better user experience)
+      if (!/^[^@\s]+@mru\.edu\.in$/.test(email)) {
+        message.className = "error";
+        message.textContent = "Please use your official @mru.edu.in email address.";
+        return;
+      }
+
+      // Disable button while sending
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending...";
+      message.className = "";
+      message.textContent = "";
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: new URL("dashboard.html", window.location.href).href
+        }
+      });
+
+      if (error) {
+        message.className = "error";
+        message.textContent = "Unable to send the login link. Please try again later.";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send Login Link";
+      } else {
+        message.className = "success";
+        message.textContent = "If this email is registered, a secure login link has been sent to your inbox. Please check your email.";
+        submitBtn.textContent = "Link Sent";
+      }
+    });
+  </script>
+</body>
+</html>
