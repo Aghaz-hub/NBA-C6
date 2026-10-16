@@ -15,29 +15,6 @@
     #app {
       display: none;
     }
-    a {
-      display: inline-block;
-      margin: 0.4rem 0;
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    button {
-      margin-top: 1.5rem;
-      padding: 0.6rem 1.2rem;
-      background: #dc2626;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    button:hover {
-      background: #b91c1c;
-    }
     #status {
       color: #555;
     }
@@ -48,28 +25,17 @@
   <p id="status">Verifying your session…</p>
 
   <main id="app">
-    <h1>MRU Faculty Tools</h1>
-    <p>Logged in as: <strong id="faculty-email"></strong></p>
-
-    <hr>
-
-    <!-- ========== PUT YOUR TOOLS HERE ========== -->
-    <h3>Available Tools</h3>
-    <a href="https://aghaimranhusain.github.io/QP-erp-marks-generator/">Classroom Finder</a><br>
-  
-    <!-- Add more tool links below -->
-    <!-- <a href="your-tool.html">Your Tool Name</a><br> -->
-
-    <br><br>
-    <button id="logout">Sign Out</button>
+    <h1>Login Successful</h1>
+    <p>Redirecting you to the Admin Dashboard...</p>
   </main>
 
   <script type="module">
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    // ========== REPLACE THESE TWO VALUES ==========
+    // ========== YOUR SUPABASE KEYS ==========
     const SUPABASE_URL = "https://oppworrrglnaqechzlfn.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcHdvcnJyZ2xuYXFlY2h6bGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjQ5NTcsImV4cCI6MjEwNzY0MDk1N30.aaQbGkRUW067HMxxcgAZ5-j2Ea7YahFiTWrmqszzSGw"; // ==============================================
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcHdvcnJyZ2xuYXFlY2h6bGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNjQ5NTcsImV4cCI6MjEwNzY0MDk1N30.aaQbGkRUW067HMxxcgAZ5-j2Ea7YahFiTWrmqszzSGw";
+    // =======================================
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -87,7 +53,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
       const email = user.email.toLowerCase();
 
-      // Check if this email exists in the allowed_faculty table
+      // Check if email is in the allowed list
       const { data: allowed, error: allowError } = await supabase
         .from("allowed_faculty")
         .select("email")
@@ -95,24 +61,16 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
         .single();
 
       if (allowError || !allowed) {
-        // Email is not in the allow-list → deny access
         await supabase.auth.signOut();
         window.location.replace("index.html");
         return;
       }
 
-      // User is allowed
-      document.getElementById("faculty-email").textContent = email;
-      status.style.display = "none";
-      app.style.display = "block";
+      // ✅ User is allowed → Redirect to the real Admin Dashboard
+      window.location.replace("Admin_Dashboard_NBA_C6.html");
     }
 
-    document.getElementById("logout").addEventListener("click", async () => {
-      await supabase.auth.signOut();
-      window.location.replace("index.html");
-    });
-
-    // Run the check when page loads
+    // Run the check
     checkAccess();
   </script>
 </body>
